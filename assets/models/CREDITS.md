@@ -7,3 +7,7 @@ CC0 models need no attribution but are listed here anyway.
 - "Vape" by pgonarg, https://poly.pizza/m/kBOhB2eCji. Licence at https://creativecommons.org/licenses/by/3.0
 - "Smoke" by Quaternius, https://poly.pizza/m/RReLSfPo1Q. Licence at https://creativecommons.org/publicdomain/zero/1.0/
 - "Suspicious Plant" by Rafael, https://poly.pizza/m/FJhXwFAoHw. Licence at https://creativecommons.org/publicdomain/zero/1.0/
+- "VAPE PEN - LARGE" by Pearl Grey, https://poly.pizza/m/5CMa9iNBbAK. Licence at https://creativecommons.org/licenses/by/3.0
+- "Cigar" by Poly by Google, https://poly.pizza/m/cT7awduBbgn. Licence at https://creativecommons.org/licenses/by/3.0
+- "Cigarette" by Zgeal, https://poly.pizza/m/2RL6h8MbDPb. Licence at https://creativecommons.org/licenses/by/3.0
+- "Lighter" by MaverickFX, https://poly.pizza/m/t8AmON8X5a. Licence at https://creativecommons.org/publicdomain/zero/1.0/
