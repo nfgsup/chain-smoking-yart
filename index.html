@@ -1,0 +1,344 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0b0413">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%230b0413'/%3E%3Cpath d='M30 10h8v22a8 8 0 0 1-8 8z' fill='%23c9ff4f'/%3E%3Ccircle cx='32' cy='46' r='5' fill='%23ff4f9d'/%3E%3C/svg%3E">
+<title>Chain Smoking Yart — Canapuff Edition</title>
+<meta name="description" content="Fuma lo Yart il più a lungo possibile. Mini gioco mobile one-button.">
+<style>
+  :root{
+    --acid:#c9ff4f;
+    --acid-soft:#9fe02f;
+    --magenta:#ff4f9d;
+    --cyan:#63e8ff;
+    --ink:#f7f2ff;
+    --dim:rgba(247,242,255,.5);
+    --panel:rgba(18,7,30,.86);
+    --font:"Helvetica Neue",Helvetica,Arial,system-ui,sans-serif;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{
+    height:100%;margin:0;overflow:hidden;background:#08030f;color:var(--ink);
+    font-family:var(--font);-webkit-font-smoothing:antialiased;
+  }
+  body{
+    touch-action:none;user-select:none;-webkit-user-select:none;
+    overscroll-behavior:none;
+    background:
+      radial-gradient(140% 90% at 50% -10%, #4a1378 0%, #220a3d 42%, #0a0413 78%, #05010a 100%);
+  }
+  #stage{position:fixed;inset:0;width:100%;height:100%;display:block;z-index:1}
+  @media (min-width: 760px){
+    #ui{padding-left:calc(50vw - 330px);padding-right:calc(50vw - 330px)}
+    .track{height:22px}
+  }
+  /* soft nebula haze behind everything */
+  .haze{
+    position:fixed;inset:-20%;z-index:0;pointer-events:none;
+    background:
+      radial-gradient(45% 35% at 22% 30%, rgba(120,255,180,.10), transparent 70%),
+      radial-gradient(50% 40% at 82% 68%, rgba(255,79,157,.12), transparent 70%),
+      radial-gradient(40% 30% at 55% 85%, rgba(201,255,79,.08), transparent 70%);
+    filter:blur(10px);
+  }
+  .vignette{
+    position:fixed;inset:0;z-index:2;pointer-events:none;
+    box-shadow:inset 0 0 140px rgba(0,0,0,.85);
+    transition:box-shadow .6s ease;
+  }
+  body.high .vignette{
+    box-shadow:inset 0 0 60px rgba(120,255,120,.18), inset 0 0 160px rgba(0,0,0,.9);
+  }
+  .grain{
+    position:fixed;inset:0;z-index:3;pointer-events:none;opacity:.05;mix-blend-mode:overlay;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)' opacity='.6'/%3E%3C/svg%3E");
+  }
+
+  /* ---------- HUD ---------- */
+  #ui{
+    position:fixed;inset:0;z-index:6;pointer-events:none;
+    display:flex;flex-direction:column;justify-content:space-between;
+    padding:calc(14px + env(safe-area-inset-top)) calc(16px + env(safe-area-inset-right))
+            calc(16px + env(safe-area-inset-bottom)) calc(16px + env(safe-area-inset-left));
+  }
+  .top{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
+  .logo{
+    font-size:10px;font-weight:800;letter-spacing:.22em;line-height:1.45;
+    color:rgba(247,242,255,.55);text-transform:uppercase;
+  }
+  .logo b{display:block;color:var(--ink);font-size:13px;letter-spacing:.16em}
+  .logo i{color:var(--acid);font-style:normal}
+
+  .scorewrap{text-align:right;min-width:110px}
+  .lab{font-size:9px;letter-spacing:.28em;color:var(--dim);font-weight:700}
+  #score{
+    font-size:clamp(34px,10vw,46px);font-weight:900;letter-spacing:-.04em;line-height:.95;
+    font-variant-numeric:tabular-nums;color:var(--ink);
+    text-shadow:0 0 24px rgba(201,255,79,.25);
+  }
+  .best{font-size:9px;letter-spacing:.18em;color:var(--dim);font-weight:700;margin-top:4px}
+  .best span{color:var(--acid)}
+
+  .chain{
+    align-self:flex-start;margin-top:10px;
+    display:inline-flex;align-items:center;gap:8px;
+    padding:7px 12px;border-radius:999px;
+    background:rgba(201,255,79,.10);border:1px solid rgba(201,255,79,.32);
+    font-size:10px;font-weight:800;letter-spacing:.16em;color:var(--acid);
+    transition:transform .18s ease,background .3s ease,border-color .3s ease;
+  }
+  .chain b{font-size:15px;letter-spacing:0;font-variant-numeric:tabular-nums}
+  .chain.pop{transform:scale(1.14)}
+  .chain.max{background:rgba(255,79,157,.16);border-color:rgba(255,79,157,.5);color:#ffb4d4}
+
+  #callout{
+    position:absolute;left:0;right:0;top:26%;text-align:center;
+    font-size:clamp(26px,9vw,40px);font-weight:900;letter-spacing:-.03em;
+    color:var(--acid);text-shadow:0 0 34px rgba(201,255,79,.5);
+    opacity:0;transform:translateY(8px) scale(.94);pointer-events:none;
+  }
+  #callout.show{animation:pop 1.05s cubic-bezier(.2,.9,.25,1) forwards}
+  #callout.bad{color:var(--magenta);text-shadow:0 0 34px rgba(255,79,157,.5)}
+  #callout small{display:block;font-size:11px;letter-spacing:.22em;font-weight:700;opacity:.65;margin-top:6px}
+  @keyframes pop{
+    0%{opacity:0;transform:translateY(14px) scale(.9)}
+    18%{opacity:1;transform:translateY(0) scale(1.04)}
+    32%{transform:translateY(0) scale(1)}
+    75%{opacity:1}
+    100%{opacity:0;transform:translateY(-18px) scale(1)}
+  }
+
+  .bottom{display:flex;flex-direction:column;gap:10px}
+  .hint{
+    text-align:center;font-size:11px;font-weight:800;letter-spacing:.2em;
+    color:rgba(247,242,255,.55);text-transform:uppercase;transition:color .2s;
+    min-height:14px;
+  }
+  .hint.aim{color:var(--acid);text-shadow:0 0 18px rgba(201,255,79,.55)}
+  .hint.bad{color:var(--magenta)}
+
+  .meter{position:relative}
+  .track{
+    position:relative;height:26px;border-radius:8px;overflow:hidden;
+    background:rgba(255,255,255,.07);
+    border:1px solid rgba(255,255,255,.14);
+    box-shadow:inset 0 2px 10px rgba(0,0,0,.55);
+  }
+  .ticks{
+    position:absolute;inset:0;opacity:.35;
+    background-image:repeating-linear-gradient(90deg,rgba(255,255,255,.35) 0 1px,transparent 1px 10%);
+  }
+  #zone{
+    position:absolute;top:0;bottom:0;left:60%;width:24%;
+    background:linear-gradient(180deg,rgba(201,255,79,.34),rgba(120,220,60,.18));
+    border-left:2px solid rgba(201,255,79,.95);
+    border-right:2px solid rgba(201,255,79,.95);
+    box-shadow:0 0 22px rgba(201,255,79,.35);
+    transition:opacity .2s;
+  }
+  #zone.aim{background:linear-gradient(180deg,rgba(201,255,79,.65),rgba(120,220,60,.35));box-shadow:0 0 28px rgba(201,255,79,.75)}
+  #fill{
+    position:absolute;top:0;bottom:0;left:0;width:0%;
+    background:linear-gradient(90deg,rgba(99,232,255,.35),rgba(247,242,255,.92));
+    border-right:2px solid #fff;
+    box-shadow:0 0 18px rgba(255,255,255,.45);
+    mix-blend-mode:screen;
+  }
+  #fill.danger{background:linear-gradient(90deg,rgba(255,79,157,.35),rgba(255,120,160,.95));border-right-color:#ffd0e0}
+  .scale{
+    display:flex;justify-content:space-between;margin-top:5px;
+    font-size:8px;letter-spacing:.24em;color:rgba(247,242,255,.32);font-weight:700;
+  }
+  .row{display:flex;align-items:center;justify-content:space-between;gap:12px}
+  .lives{display:flex;align-items:center;gap:6px;font-size:9px;letter-spacing:.2em;color:var(--dim);font-weight:700}
+  .lives span{
+    width:22px;height:8px;border-radius:4px;background:rgba(255,255,255,.16);
+    transition:background .25s,box-shadow .25s;
+  }
+  .lives span.on{background:var(--acid);box-shadow:0 0 12px rgba(201,255,79,.6)}
+  .lives span.lost{background:var(--magenta);box-shadow:0 0 12px rgba(255,79,157,.6)}
+  .time{font-size:9px;letter-spacing:.2em;color:var(--dim);font-weight:700;font-variant-numeric:tabular-nums}
+  .time b{font-size:13px;color:var(--ink);letter-spacing:.02em}
+  .mute{
+    width:26px;height:26px;flex:0 0 auto;border-radius:50%;display:grid;place-items:center;
+    background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.16);
+    color:rgba(247,242,255,.7);cursor:pointer;pointer-events:auto;padding:0;
+    transition:background .2s,color .2s;
+  }
+  .mute:active{background:rgba(255,255,255,.16)}
+  .mute.off{color:rgba(255,79,157,.9)}
+  .mute.off .wave{opacity:0}
+
+  /* ---------- OVERLAYS ---------- */
+  .overlay{
+    position:fixed;inset:0;z-index:20;display:flex;align-items:center;justify-content:center;
+    padding:calc(20px + env(safe-area-inset-top)) 22px calc(20px + env(safe-area-inset-bottom));
+    background:linear-gradient(180deg,rgba(8,3,15,.55) 0%,rgba(8,3,15,.9) 70%,rgba(8,3,15,.96) 100%);
+    backdrop-filter:blur(7px);-webkit-backdrop-filter:blur(7px);
+    animation:fade .35s ease both;
+  }
+  .overlay[hidden]{display:none}
+  @keyframes fade{from{opacity:0}to{opacity:1}}
+  .panel{width:min(420px,100%);text-align:center}
+  .kicker{
+    font-size:9px;letter-spacing:.36em;font-weight:800;color:var(--acid);
+    text-transform:uppercase;margin:0 0 14px;
+  }
+  h1{
+    margin:0;font-size:clamp(46px,15vw,84px);line-height:.84;letter-spacing:-.045em;
+    font-weight:900;text-transform:uppercase;
+  }
+  h1 .out{color:transparent;-webkit-text-stroke:2px rgba(247,242,255,.5)}
+  h1 .full{color:var(--acid);text-shadow:0 0 40px rgba(201,255,79,.45)}
+  .tag{
+    margin:18px auto 0;max-width:300px;font-size:13px;line-height:1.6;
+    color:rgba(247,242,255,.7);font-weight:500;
+  }
+  .cta{
+    margin-top:22px;width:100%;border:0;border-radius:999px;cursor:pointer;
+    background:var(--acid);color:#0b0413;
+    padding:18px 20px;font-family:inherit;font-size:13px;font-weight:900;letter-spacing:.16em;
+    box-shadow:0 10px 34px rgba(201,255,79,.32), inset 0 -3px 0 rgba(0,0,0,.16);
+    transition:transform .12s ease,box-shadow .2s ease;
+    animation:breathe 2.4s ease-in-out infinite;
+    pointer-events:auto;
+  }
+  .cta:active{transform:scale(.97);box-shadow:0 6px 20px rgba(201,255,79,.25)}
+  .cta[disabled]{opacity:.55;animation:none;cursor:default}
+  @keyframes breathe{0%,100%{box-shadow:0 10px 34px rgba(201,255,79,.28)}50%{box-shadow:0 10px 50px rgba(201,255,79,.5)}}
+  .micro{
+    margin:16px 0 0;font-size:9px;letter-spacing:.16em;line-height:1.9;
+    color:rgba(247,242,255,.38);font-weight:700;text-transform:uppercase;
+  }
+  .link{
+    display:inline-block;margin-top:18px;background:none;border:0;cursor:pointer;
+    font-family:inherit;font-size:9px;letter-spacing:.24em;font-weight:800;
+    color:rgba(247,242,255,.35);text-decoration:underline;text-underline-offset:4px;
+    pointer-events:auto;padding:8px;
+  }
+  .stats{
+    display:flex;gap:10px;margin:22px 0 0;
+  }
+  .stat{
+    flex:1;background:rgba(255,255,255,.055);border:1px solid rgba(255,255,255,.1);
+    border-radius:14px;padding:12px 8px;
+  }
+  .stat .k{font-size:8px;letter-spacing:.2em;font-weight:800;color:var(--dim)}
+  .stat .v{font-size:22px;font-weight:900;letter-spacing:-.03em;font-variant-numeric:tabular-nums;margin-top:4px}
+  .stat .v small{font-size:10px;color:var(--dim);margin-left:1px}
+  .record{
+    display:inline-block;margin-top:16px;padding:6px 12px;border-radius:999px;
+    font-size:9px;font-weight:900;letter-spacing:.22em;color:#0b0413;background:var(--acid);
+    animation:breathe 2s ease-in-out infinite;
+  }
+  .record[hidden]{display:none}
+  .credits-body{text-align:left;font-size:12px;line-height:1.7;color:rgba(247,242,255,.7);font-weight:500}
+  .credits-body h2{font-size:15px;letter-spacing:.06em;margin:0 0 4px;text-transform:uppercase}
+  .credits-body a{color:var(--acid)}
+  .credits-body ul{padding-left:16px;margin:10px 0}
+  .credits-body li{margin-bottom:10px}
+  .credits-body p{margin:10px 0}
+</style>
+</head>
+<body>
+<canvas id="stage" aria-hidden="true"></canvas>
+<div class="haze"></div>
+<div class="vignette"></div>
+<div class="grain"></div>
+
+<div id="ui">
+  <div>
+    <div class="top">
+      <div class="logo">chain smoking<b>YART</b></div>
+      <div class="scorewrap">
+        <div class="lab">PUNTI</div>
+        <div id="score">0</div>
+        <div class="best">BEST <span id="bestVal">0</span></div>
+      </div>
+    </div>
+    <div id="chain" class="chain">CATENA <b>×1</b></div>
+  </div>
+
+  <div id="callout"></div>
+
+  <div class="bottom">
+    <div id="hint" class="hint">TIENI PREMUTO PER INALARE</div>
+    <div class="meter">
+      <div class="track">
+        <div class="ticks"></div>
+        <div id="zone"></div>
+        <div id="fill"></div>
+      </div>
+      <div class="scale"><span>0%</span><span>POLMONI</span><span>100%</span></div>
+    </div>
+    <div class="row">
+      <div id="lives" class="lives" aria-label="Colpi di tosse"><span class="on"></span><span class="on"></span><span class="on"></span></div>
+      <button id="muteBtn" class="mute" aria-label="Audio on/off" aria-pressed="false">
+        <svg viewBox="0 0 24 24" width="14" height="14" aria-hidden="true"><path d="M4 9h3l4-3v12l-4-3H4z" fill="currentColor"/><path class="wave" d="M15 8.5a5 5 0 0 1 0 7M17.5 6a8.5 8.5 0 0 1 0 12" stroke="currentColor" stroke-width="1.8" fill="none" stroke-linecap="round"/></svg>
+      </button>
+      <div class="time">TEMPO <b id="time">0.0</b>s</div>
+    </div>
+  </div>
+</div>
+
+<!-- START -->
+<div class="overlay" id="startScreen">
+  <div class="panel">
+    <p class="kicker">Canapuff Edition</p>
+    <h1><span class="out">Chain</span><br><span class="out">Smoking</span><br><span class="full">Yart</span></h1>
+    <p class="tag">Tieni premuto per inalare.<br>Rilascia quando la barra è nel <b style="color:var(--acid)">verde</b>.<br>Fuma il più a lungo possibile.</p>
+    <button class="cta" id="startBtn">PREMI PER FUMARE</button>
+    <p class="micro">3 colpi di tosse e lo yart cade</p>
+    <button class="link" id="creditsBtn">CREDITS</button>
+  </div>
+</div>
+
+<!-- GAME OVER -->
+<div class="overlay" id="overScreen" hidden>
+  <div class="panel">
+    <p class="kicker" id="overKicker">Sessione finita</p>
+    <h1><span class="out">Yart</span><br><span class="full">Caduto</span></h1>
+    <div class="stats">
+      <div class="stat"><div class="k">PUNTI</div><div class="v" id="overScore">0</div></div>
+      <div class="stat"><div class="k">TEMPO</div><div class="v" id="overTime">0.0<small>s</small></div></div>
+      <div class="stat"><div class="k">CATENA</div><div class="v" id="overChain">×1</div></div>
+    </div>
+    <div class="record" id="recordBadge" hidden>NUOVO RECORD</div>
+    <button class="cta" id="againBtn">FUMANE UN'ALTRA</button>
+    <p class="micro" id="overBest">BEST 0</p>
+    <button class="link" id="creditsBtn2">CREDITS</button>
+  </div>
+</div>
+
+<!-- CREDITS -->
+<div class="overlay" id="creditsScreen" hidden>
+  <div class="panel">
+    <p class="kicker">Credits</p>
+    <div class="credits-body">
+      <h2>Chain Smoking Yart</h2>
+      <p>Un mini gioco one-button. Nessun tabacco è stato maltrattato.</p>
+      <p>Modelli 3D da <a href="https://poly.pizza" target="_blank" rel="noopener">Poly.Pizza</a>:</p>
+      <ul>
+        <li><b>Vape</b> di pgonarg — CC BY 3.0<br><a href="https://poly.pizza/m/kBOhB2eCji" target="_blank" rel="noopener">poly.pizza/m/kBOhB2eCji</a></li>
+        <li><b>Smoke</b> di Quaternius — CC0 1.0<br><a href="https://poly.pizza/m/RReLSfPo1Q" target="_blank" rel="noopener">poly.pizza/m/RReLSfPo1Q</a></li>
+        <li><b>Suspicious Plant</b> di Rafael — CC0 1.0<br><a href="https://poly.pizza/m/FJhXwFAoHw" target="_blank" rel="noopener">poly.pizza/m/FJhXwFAoHw</a></li>
+      </ul>
+      <p>Renderer: three.js (MIT). Audio sintetizzato nel browser.</p>
+      <p style="font-size:10px;opacity:.6">Gioco parodia. Fai finta di essere responsabile.</p>
+    </div>
+    <button class="cta" id="closeCredits">CHIUDI</button>
+  </div>
+</div>
+
+<script type="importmap">
+{
+  "imports": {
+    "three": "./vendor/three.module.min.js"
+  }
+}
+</script>
+<script type="module" src="./game.js"></script>
+</body>
+</html>
